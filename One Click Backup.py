@@ -16,7 +16,7 @@ class windowClass(wx.Frame):
 
     def basicGUI(self):
         panel = wx.Panel(self)
-        self.myLastFileXferTextBox = wx.StaticText(panel, -1, "Last File Transfer Was Done: " , pos=(10,150))
+        self.myLastFileXferTextBox = wx.StaticText(panel, -1, "Last File Transfer Was Done: " , pos=(10,430))
         self.updateLastXferTextBox(self)
 
         menuBar = wx.MenuBar()
@@ -32,6 +32,15 @@ class windowClass(wx.Frame):
         menuBar.Append(fileButton, "&File")
         self.SetMenuBar(menuBar)
 
+        
+        wx.StaticText(panel, -1, "Please select what type of file transfer: ", pos=(10, 130))
+        self.myRadioButton1 = wx.RadioButton(panel, label="Move", pos=(360,125), size=(80,25), style=wx.RB_GROUP)
+        self.myRadioButton2 = wx.RadioButton(panel, label="Copy", pos=(260,125), size=(80,25))
+        
+        wx.StaticText(panel, -1, "Limit backup to file extension: ", pos=(10, 165))
+        self.fileExtension = wx.TextCtrl(panel, -1, "", pos=(180, 160), size=(70, 25))
+        self.updateFileExtensionTextBox(self)
+            
         wx.StaticText(panel, -1, "Create/Modify During The Day Folder (From Folder):", pos=(10,10))
         self.sourceFolderText = wx.TextCtrl(panel, -1, sourceFolder, pos=(10,30), size=(350,25))
         self.sourceFolderText.SetBackgroundColour("white")
@@ -42,15 +51,20 @@ class windowClass(wx.Frame):
         self.prevFileXfer = self.updateLastXferTextBox
         self.sourcePathChange = wx.Button(panel, label="Change", pos=(360,30), size=(80,25))
         self.destPathChange = wx.Button(panel, label="Change", pos=(360,90), size=(80,25))
-        self.fileCheckButton = wx.Button(panel, label="Check for .txt files created/modified after the last file transfer.", pos=(10,190), size=(430,25))
-        self.fileListBox = wx.ListBox(panel, pos=(10,215), size=(430, 200), style = 1)
+        self.fileCheckButton = wx.Button(panel, label="Check for " + self.fileExtension.Value + " files created/modified after the last file transfer.", pos=(10,190), size=(430,25))
+
         
-        wx.StaticText(panel, -1, "Please select what type of file transfer: ", pos=(10, 430))
-        self.myRadioButton1 = wx.RadioButton(panel, label="Move", pos=(360,425), size=(80,25), style=wx.RB_GROUP)
-        self.myRadioButton2 = wx.RadioButton(panel, label="Copy", pos=(260,425), size=(80,25))
-        self.initiateXferButton = wx.Button(panel, label="Transfer .txt files created/modified\nafter the last file transfer.", pos=(10, 465), size=(430,50))
+        
+        self.fileListBox = wx.ListBox(panel, pos=(10,215), size=(430, 200), style = 1)
+
+        
+        #10, 150
+        self.initiateXferButton = wx.Button(panel, label="Transfer " + self.fileExtension.Value + " files created/modified\nafter the last file transfer.", pos=(10, 465), size=(430,50))
+
+        self.fileExtensionTextBoxChanged(self) #TO DO: UPDATE XFER BUTTON AND FILE CHECK BUTTON ABOVE TEXT TO ""
 
         self.Bind(wx.EVT_TOOL, self.quitProgram, exitItem)
+        self.Bind(wx.EVT_TEXT, self.fileExtensionTextBoxChanged, self.fileExtension)
         self.Bind(wx.EVT_BUTTON, self.sourcePathChangeButton, self.sourcePathChange)
         self.Bind(wx.EVT_TEXT, self.sourcePathChangeText, self.sourceFolderText)
         self.Bind(wx.EVT_BUTTON, self.destPathChangeButton, self.destPathChange)
@@ -92,6 +106,20 @@ class windowClass(wx.Frame):
     def radioButtonClick(self, e):
         pass
 
+    def fileExtensionTextBoxChanged(self, e):
+        if self.fileExtension.Value == "":
+            self.fileCheckButton.SetLabel("Check for any files created/modified after the last file transfer.")
+            self.initiateXferButton.SetLabel("Transfer any files created/modified\nafter the last file transfer.")
+        else:
+            self.fileCheckButton.SetLabel("Check for " + self.fileExtension.Value + " files created/modified after the last file transfer.")
+            self.initiateXferButton.SetLabel("Transfer " + self.fileExtension.Value + " files created/modified\nafter the last file transfer.")
+
+    def updateFileExtensionTextBox(self, e):
+        fileExt = getPrevChosenFileExtension()
+        if fileExt == None:
+            fileExt = ""
+        self.fileExtension.Value = fileExt
+
     def updateLastXferTextBox(self, e):
         prevFileXfer = getLastFileXferDateTime()
         if prevFileXfer == None or prevFileXfer == "" :
@@ -111,21 +139,33 @@ class windowClass(wx.Frame):
             fileList = []
             fmt = '%Y-%m-%d %H:%M:%S'
             self.fileListBox.Clear()
-            for eachName in fileNames:
-                if len(eachName) >= 4:
-                    if str(eachName[len(eachName)-4:len(eachName)]).upper() == ".TXT" and (prevFileXfer < datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(sourceFolder, eachName)))):
+            if self.fileExtension.Value != "":
+                for eachName in fileNames:
+                    if len(eachName) >= 4:
+                        if str(eachName[len(eachName)-4:len(eachName)]).lower() == str(self.fileExtension.Value).lower() and (prevFileXfer < datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(sourceFolder, eachName)))):
+                            self.myStatusBar.SetBackgroundColour('#00FF00')
+                            self.myStatusBar.SetStatusText( "")
+                            fileList.append(eachName)
+                            self.fileListBox.Append(eachName)
+            else:
+                for eachName in fileNames:
+                    if (prevFileXfer < datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(sourceFolder, eachName)))):
                         self.myStatusBar.SetBackgroundColour('#FFFFFF')
                         self.myStatusBar.SetStatusText( "")
                         fileList.append(eachName)
                         self.fileListBox.Append(eachName)
+                
             if fileList == []:
                 self.myStatusBar.SetBackgroundColour('#FF0000')
-                self.myStatusBar.SetStatusText( "I didn't find any .txt files that were created/modified after the last file transfer.")
+                if self.fileExtension.Value == "":
+                    self.myStatusBar.SetStatusText( "I didn't find any files that were created/modified after the last file transfer.")
+                else:
+                    self.myStatusBar.SetStatusText( "I didn't find any " + self.fileExtension.Value + " files that were created/modified after the last file transfer.")
             return fileList, timeStarted
             
         except:
             self.myStatusBar.SetBackgroundColour('#FF0000')
-            self.myStatusBar.SetStatusText(  "There was a problem accessing the source folder ")
+            self.myStatusBar.SetStatusText(  "There was a problem accessing the source folder")
             
     def xferFiles(self, fileNames, timeStarted):
         try:
@@ -135,9 +175,12 @@ class windowClass(wx.Frame):
             else:
                 for eachName in fileNames:
                     shutil.copy2(os.path.join(sourceFolder, eachName), os.path.join(destFolder, eachName))
-            self.myStatusBar.SetBackgroundColour('#FFFFFF')
-            self.myStatusBar.SetStatusText( str(len(fileNames)) + " files were xfered from " + sourceFolder + " to " + destFolder)
-            setLastFileXferDateTime(timeStarted)
+            self.myStatusBar.SetBackgroundColour('#00FF00')
+            if len(fileNames) > 1:
+                self.myStatusBar.SetStatusText( str(len(fileNames)) + " files were xfered from " + sourceFolder + " to " + destFolder)
+            else:
+                self.myStatusBar.SetStatusText( str(len(fileNames)) + " file was xfered from " + sourceFolder + " to " + destFolder)
+            updateDatabase(timeStarted, str(self.fileExtension.Value).lower())
             self.updateLastXferTextBox(self)
         except:
             self.myStatusBar.SetBackgroundColour('#FF0000')
@@ -149,12 +192,12 @@ class windowClass(wx.Frame):
             self.xferFiles(fileNames, timeStarted)
         self.fileListBox.Clear()
 
-def setLastFileXferDateTime(timeStarted):
+def updateDatabase(timeStarted, fileExtension):
     connection = sqlite3.connect("fileXfer_database.db")
     c = connection.cursor()
     c.execute("DROP TABLE IF EXISTS DateTimeOfLastXferTable")
-    c.execute("CREATE TABLE DateTimeOfLastXferTable(DateAndTime varchar(64))")
-    c.execute("INSERT INTO DateTimeOfLastXferTable VALUES(?)", (str(datetime.datetime.strftime(datetime.datetime.now(), "%m-%d-%Y %H:%M:%S.%f")),))
+    c.execute("CREATE TABLE DateTimeOfLastXferTable(DateAndTime varchar(64), FileExtension varchar(16))")
+    c.execute("INSERT INTO DateTimeOfLastXferTable VALUES(?,?)", (str(datetime.datetime.strftime(datetime.datetime.now(), "%m-%d-%Y %H:%M:%S.%f")), fileExtension))
     connection.commit()
     connection.close()    
 
@@ -169,7 +212,22 @@ def getLastFileXferDateTime():
             return myReturnValue
     except:
             c.execute("DROP TABLE IF EXISTS DateTimeOfLastXferTable")
-            c.execute("CREATE TABLE DateTimeOfLastXferTable(DateAndTime varchar(64))")
+            c.execute("CREATE TABLE DateTimeOfLastXferTable(DateAndTime varchar(64), FileExtension varchar(16))")
+            connection.close()
+            return None
+
+def getPrevChosenFileExtension():
+    connection = sqlite3.connect("fileXfer_database.db")
+    c = connection.cursor()
+    try:
+        c.execute( "SELECT * FROM DateTimeOfLastXferTable")
+        for row in c.fetchall():
+            myReturnValue = str(row[1])
+            connection.close()
+            return myReturnValue
+    except:
+            c.execute("DROP TABLE IF EXISTS DateTimeOfLastXferTable")
+            c.execute("CREATE TABLE DateTimeOfLastXferTable(DateAndTime varchar(64), FileExtension varchar(16))")
             connection.close()
             return None
 
