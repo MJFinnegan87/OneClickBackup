@@ -6,3 +6,5 @@ This program allows end users to either copy or move files from one specified lo
 This project was a fun way for me to think about effective GUI design, learn wx.Python GUI objects as opposed to the more familiar WPF objects, and practice creating/reading/updating/deleting database information.
 
 This project is almost complete, the last feature to be implemented is storing the user's working file location and backup file location preferences in the database. Once complete, I will compile this program for Windows, Mac, and Linux and release as an open source solution.
+
+No instructions followed or other peoples' code were used, this work is completely my own.
