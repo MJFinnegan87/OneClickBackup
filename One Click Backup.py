@@ -35,10 +35,10 @@ class windowClass(wx.Frame):
         wx.StaticText(panel, -1, "Limit backup to file extension: ", pos=(10, 165))
         self.fileExtension = wx.TextCtrl(panel, -1, "", pos=(180, 160), size=(70, 25))
         self.updateFileExtensionTextBox(self)
-        wx.StaticText(panel, -1, "Create/Modify During The Day Folder (From Folder):", pos=(10,10))
+        wx.StaticText(panel, -1, "Existing Files Folder:", pos=(10,10))
         self.sourceFolderText = wx.TextCtrl(panel, -1, sourceFolder, pos=(10,30), size=(350,25))
         self.sourceFolderText.SetBackgroundColour("white")
-        wx.StaticText(panel, -1, "Temporary Folder For Holding Before Moving (To Folder):", pos=(10,70))
+        wx.StaticText(panel, -1, "Backup To Folder:", pos=(10,70))
         self.destFolderText = wx.TextCtrl(panel, -1, destFolder, pos=(10,90), size=(350,25))
         self.destFolderText.SetBackgroundColour("white")
         self.myStatusBar = self.CreateStatusBar()
@@ -126,6 +126,7 @@ class windowClass(wx.Frame):
     
     def getFileList(self, e):
         self.updateLastXferTextBox(self)
+        filesToXfer = 0
         try:
             timeStarted = datetime.datetime.now() #GRABBING THIS IMMEDIATELY SO IF SOMEONE CREATES A FILE AT THE SAME TIME AS THIS PROGRAM IS CHECKING WHAT TO BACKUP, THEN THOSE FILES WILL HAVE A CREATE DATETIME AFTER THIS BACKUP DATETIME
             prevFileXfer = getLastFileXferDateTime()
@@ -140,16 +141,18 @@ class windowClass(wx.Frame):
                     if len(eachName) >= len(self.fileExtension.Value):
                         if str(eachName[len(eachName)-len(self.fileExtension.Value):len(eachName)]).lower() == str(self.fileExtension.Value).lower() and (prevFileXfer < datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(sourceFolder, eachName)))):
                             self.myStatusBar.SetBackgroundColour('#00FF00')
-                            self.myStatusBar.SetStatusText( "")
                             fileList.append(eachName)
                             self.fileListBox.Append(eachName)
+                            filesToXfer = filesToXfer + 1
+                self.myStatusBar.SetStatusText( "Found " +str(filesToXfer) + " files to transfer")
             else:
                 for eachName in fileNames:
                     if (prevFileXfer < datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(sourceFolder, eachName)))):
-                        self.myStatusBar.SetBackgroundColour('#FFFFFF')
-                        self.myStatusBar.SetStatusText( "")
+                        self.myStatusBar.SetBackgroundColour('#00FF00')
                         fileList.append(eachName)
                         self.fileListBox.Append(eachName)
+                        filesToXfer = filesToXfer + 1
+                self.myStatusBar.SetStatusText( "Found " +str(filesToXfer) + " files to transfer")
                 
             if fileList == []:
                 self.myStatusBar.SetBackgroundColour('#FF0000')
