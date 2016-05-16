@@ -9,9 +9,9 @@ import sqlite3
 sourceFolder = "C:\\Users\\Mike\\Desktop\\A"
 destFolder = "C:\\Users\\Mike\\Desktop\\B"
 
-class windowClass(wx.Frame):
+class WindowClass(wx.Frame):
     def __init__(self, *args, **kwargs):
-        super(windowClass, self).__init__(*args, **kwargs)
+        super(WindowClass, self).__init__(*args, **kwargs)
         self.basicGUI()
 
     def basicGUI(self):
@@ -191,6 +191,7 @@ class windowClass(wx.Frame):
             self.xferFiles(fileNames, timeStarted)
         self.fileListBox.Clear()
 
+
 def updateDatabase(timeStarted, fileExtension):
     connection = sqlite3.connect("fileXfer_database.db")
     c = connection.cursor()
@@ -231,5 +232,5 @@ def getPrevChosenFileExtension():
             return None
 
 app = wx.App()
-myWindow = windowClass(None, size = (470, 600)) # , style = wx.MAXIMIZE_BOX | wx.SYSTEM_MENU | wx.CLOSE_BOX | wx.CAPTION)
+myWindow = WindowClass(None, size = (470, 600)) # , style = wx.MAXIMIZE_BOX | wx.SYSTEM_MENU | wx.CLOSE_BOX | wx.CAPTION)
 app.MainLoop()
